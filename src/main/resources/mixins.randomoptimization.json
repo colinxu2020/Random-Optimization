@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "me.colinxu.randomoptimization.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "randomoptimization.refmap.json",
+  "mixins": [
+    "BlockMixin",
+    "BoatMixin",
+    "FilePackResourcesMixin",
+    "ItemEntityMixin",
+    "ServerLevelMixin",
+    "SharedConstantsMixin",
+    "StructureCheckMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "plugin": "me.colinxu.randomoptimization.RandomOptimizationMixinConfigPlugin"
+}
