@@ -2,10 +2,12 @@ package me.colinxu.randomoptimization;
 
 import com.electronwill.nightconfig.core.file.FileConfig;
 import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.fml.loading.LoadingModList;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -15,14 +17,21 @@ public class RandomOptimizationMixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage){
-        if(net.minecraftforge.fml.ModList.get().isLoaded("quick_pack")){
+        if(LoadingModList.get().getModFileById("quick_pack") != null){
             this.optimizePackLookup = false;
             return;
         }
         Path configPath = FMLPaths.CONFIGDIR.get().resolve("randomoptimization-common.toml");
-        try (FileConfig config = FileConfig.of(configPath)) {
-            config.load();
-            this.optimizePackLookup = config.getOrElse("optimize_pack_lookup", true);
+        if(Files.exists(configPath)) {
+            try (FileConfig config = FileConfig.of(configPath)) {
+                config.load();
+                this.optimizePackLookup = config.getOrElse("optimize_pack_lookup", true);
+            } catch (Exception e) {
+                e.printStackTrace();
+                this.optimizePackLookup = true;
+            }
+        }else{
+            this.optimizePackLookup = true;
         }
     }
 
