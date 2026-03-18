@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "me.colinxu.randomoptimization.mixin",
   "compatibilityLevel": "JAVA_17",
-  "refmap": "randomoptimization.refmap.json",
+  "refmap": "mixins.randomoptimization.refmap.json",
   "mixins": [
     "BlockMixin",
     "BoatMixin",
