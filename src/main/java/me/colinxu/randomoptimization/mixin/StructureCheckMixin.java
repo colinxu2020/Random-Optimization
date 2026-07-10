@@ -18,6 +18,7 @@ import net.minecraft.world.level.chunk.storage.ChunkScanAccess;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureCheck;
+import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -25,6 +26,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Mixin(StructureCheck.class)
@@ -33,9 +37,16 @@ public class StructureCheckMixin implements ChunkGeneratorStructureStateAccessor
     private ChunkGeneratorStructureState randomoptimization$generatorState;
 
     @Unique
+    private Map<Structure, List<StructurePlacement>>
+            randomoptimization$placementsCache;
+
+    @Unique
     @Override
     public void randomoptimization$passGeneratorState(ChunkGeneratorStructureState state){
-        this.randomoptimization$generatorState = state;
+        if(this.randomoptimization$generatorState != state){
+            this.randomoptimization$generatorState = state;
+            this.randomoptimization$placementsCache = null;
+        }
     }
 
     @WrapOperation(
@@ -47,13 +58,62 @@ public class StructureCheckMixin implements ChunkGeneratorStructureStateAccessor
         if(!Config.structureLocateSpeedup || this.randomoptimization$generatorState == null){
             return original.call(instance, pContext);
         }
-        var structureHolder=pContext.registryAccess().registryOrThrow(Registries.STRUCTURE).wrapAsHolder(instance);
-        for (var structurePlacement : this.randomoptimization$generatorState.getPlacementsForStructure(structureHolder)) {
-            if (structurePlacement.isStructureChunk(this.randomoptimization$generatorState, pContext.chunkPos().x, pContext.chunkPos().z)) {
+        ChunkGeneratorStructureState generatorState =
+                this.randomoptimization$generatorState;
+        List<StructurePlacement> placements =
+                this.randomoptimization$getPlacements(
+                        instance,
+                        pContext,
+                        generatorState
+                );
+
+        int chunkX = pContext.chunkPos().x;
+        int chunkZ = pContext.chunkPos().z;
+
+        for (StructurePlacement placement : placements) {
+            if (placement.isStructureChunk(
+                    generatorState,
+                    chunkX,
+                    chunkZ
+            )) {
                 return original.call(instance, pContext);
             }
         }
+
         return Optional.empty();
+    }
+
+    @Unique
+    private List<StructurePlacement> randomoptimization$getPlacements(
+            Structure structure,
+            Structure.GenerationContext context,
+            ChunkGeneratorStructureState generatorState
+    ) {
+        Map<Structure, List<StructurePlacement>> cache =
+                this.randomoptimization$placementsCache;
+
+        if (cache == null) {
+            cache = new IdentityHashMap<>(4);
+            this.randomoptimization$placementsCache = cache;
+        }
+
+        List<StructurePlacement> placements = cache.get(structure);
+
+        if (placements == null) {
+            var structureRegistry = context
+                    .registryAccess()
+                    .registryOrThrow(Registries.STRUCTURE);
+
+            var structureHolder =
+                    structureRegistry.wrapAsHolder(structure);
+
+            placements = generatorState
+                    .getPlacementsForStructure(structureHolder);
+
+            cache.put(structure, placements);
+        }
+
+        return placements;
     }
 
     @Inject(method = "<init>", at=@At("RETURN"))
