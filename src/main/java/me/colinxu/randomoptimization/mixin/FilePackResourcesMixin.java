@@ -29,16 +29,25 @@ public abstract class FilePackResourcesMixin {
     protected abstract ZipFile getOrCreateZipFile();
 
     @Unique
-    private TreeMap<String, ZipEntry> randomoptimization$cachedEntries;
+    private final Object randomoptimization$indexLock = new Object();
+
+    @Unique
+    private volatile NavigableMap<String, ZipEntry> randomoptimization$cachedEntries;
 
     @Inject(method="getOrCreateZipFile", at=@At("RETURN"))
     private void initIndex(CallbackInfoReturnable<ZipFile> cir) {
         if(this.randomoptimization$cachedEntries == null && this.zipFile != null){
-            this.randomoptimization$cachedEntries = new TreeMap<>();
-            Enumeration<? extends ZipEntry> entries = this.zipFile.entries();
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                this.randomoptimization$cachedEntries.put(entry.getName(), entry);
+            synchronized (this.randomoptimization$indexLock){
+                if(this.randomoptimization$cachedEntries != null)return;
+                TreeMap<String, ZipEntry> entries = new TreeMap<>();
+                Enumeration<? extends ZipEntry> enumeration =
+                        zipFile.entries();
+                while (enumeration.hasMoreElements()) {
+                    ZipEntry entry = enumeration.nextElement();
+                    entries.put(entry.getName(), entry);
+                }
+                this.randomoptimization$cachedEntries =
+                        Collections.unmodifiableNavigableMap(entries);
             }
         }
     }
@@ -46,7 +55,6 @@ public abstract class FilePackResourcesMixin {
     @Inject(method="close", at=@At("HEAD"))
     private void cleanupIndex(CallbackInfo ci){
         if(this.randomoptimization$cachedEntries != null){
-            this.randomoptimization$cachedEntries.clear();
             this.randomoptimization$cachedEntries = null;
         }
     }
