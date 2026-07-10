@@ -34,9 +34,7 @@ public class Config
 
     public static boolean predictableItemDrops;
     public static boolean structureLocateSpeedup;
-    public static boolean optimizePackLookup;
     public static boolean fixBoatFallDamage;
-    public static boolean lazyDFU;
 
 
     @SubscribeEvent
@@ -44,8 +42,6 @@ public class Config
     {
         predictableItemDrops=PREDICTABLE_ITEM_DROPS.get();
         structureLocateSpeedup=STRUCTURE_LOCATE_SPEEDUP.get();
-        optimizePackLookup= OPTIMIZE_PACK_LOOKUP.get();
         fixBoatFallDamage=FIX_BOAT_FALL_DAMAGE.get();
-        lazyDFU=LAZY_DFU.get();
     }
 }

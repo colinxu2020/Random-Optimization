@@ -14,31 +14,37 @@ import java.util.Set;
 
 public class RandomOptimizationMixinConfigPlugin implements IMixinConfigPlugin {
     private boolean optimizePackLookup = true;
+    private boolean lazyDFU = true;
 
     @Override
     public void onLoad(String mixinPackage){
-        if(LoadingModList.get().getModFileById("quick_pack") != null){
-            this.optimizePackLookup = false;
-            return;
-        }
         Path configPath = FMLPaths.CONFIGDIR.get().resolve("randomoptimization-common.toml");
         if(Files.exists(configPath)) {
             try (FileConfig config = FileConfig.of(configPath)) {
                 config.load();
+                this.lazyDFU = config.getOrElse("lazy_dfu", true);
                 this.optimizePackLookup = config.getOrElse("optimize_pack_lookup", true);
             } catch (Exception e) {
                 e.printStackTrace();
+                this.lazyDFU = true;
                 this.optimizePackLookup = true;
             }
         }else{
+            this.lazyDFU = true;
             this.optimizePackLookup = true;
+        }
+        if(LoadingModList.get().getModFileById("quick_pack") != null){
+            this.optimizePackLookup = false;
         }
     }
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName){
-        if(mixinClassName.equals("me.colinxu.randomoptimization.mixin.FilePackResourcesMixin")){
+        if(mixinClassName.equals("me.colinxu.randomoptimization.mixin.FilePackResourcesMixin")) {
             return this.optimizePackLookup;
+        }
+        if(mixinClassName.equals("me.colinxu.randomoptimization.mixin.SharedConstantsMixin")){
+            return this.lazyDFU;
         }
         return true;
     }
