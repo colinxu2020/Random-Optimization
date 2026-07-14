@@ -1,5 +1,6 @@
 package me.colinxu.randomoptimization.mixin;
 
+import me.colinxu.randomoptimization.resource.FilePackResourcesIndex;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
@@ -21,11 +22,19 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FilePackResourcesIndexTest {
     @TempDir
     Path temporaryDirectory;
+
+    @Test
+    void helperClassIsOutsideTheDefinedMixinPackage() {
+        String packageName = FilePackResourcesIndex.class.getPackageName();
+        assertFalse(packageName.equals("me.colinxu.randomoptimization.mixin")
+                || packageName.startsWith("me.colinxu.randomoptimization.mixin."));
+    }
 
     @Test
     void indexesRecursiveListingsAndNamespacesInArchiveOrder() throws IOException {

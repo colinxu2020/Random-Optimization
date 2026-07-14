@@ -1,5 +1,6 @@
 package me.colinxu.randomoptimization.mixin;
 
+import me.colinxu.randomoptimization.resource.FilePackResourcesIndex;
 import net.minecraft.server.packs.FilePackResources;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;

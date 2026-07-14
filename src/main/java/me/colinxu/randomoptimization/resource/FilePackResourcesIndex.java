@@ -1,4 +1,4 @@
-package me.colinxu.randomoptimization.mixin;
+package me.colinxu.randomoptimization.resource;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.FilePackResources;
@@ -21,15 +21,18 @@ import java.util.zip.ZipFile;
 
 /**
  * Immutable lookup index for a {@link FilePackResources} ZIP.
+ *
+ * <p>This helper must stay outside the package declared by the Mixin configuration;
+ * Mixin reserves that entire package tree for mixin classes.</p>
  */
-final class FilePackResourcesIndex {
+public final class FilePackResourcesIndex {
     private final TypeIndex[] indexesByType;
 
     private FilePackResourcesIndex(TypeIndex[] indexesByType) {
         this.indexesByType = indexesByType;
     }
 
-    static FilePackResourcesIndex build(ZipFile zipFile) {
+    public static FilePackResourcesIndex build(ZipFile zipFile) {
         PackType[] packTypes = PackType.values();
         TypeIndexBuilder[] builders = new TypeIndexBuilder[packTypes.length];
         String[] prefixes = new String[packTypes.length];
@@ -62,12 +65,12 @@ final class FilePackResourcesIndex {
         return new FilePackResourcesIndex(indexes);
     }
 
-    Set<String> getNamespaces(PackType packType) {
+    public Set<String> getNamespaces(PackType packType) {
         return this.indexesByType[packType.ordinal()].namespaces;
     }
 
-    void listResources(PackType packType, String namespace, String path,
-                       PackResources.ResourceOutput output) {
+    public void listResources(PackType packType, String namespace, String path,
+                              PackResources.ResourceOutput output) {
         NamespaceIndex namespaceIndex =
                 this.indexesByType[packType.ordinal()].resourcesByNamespace.get(namespace);
         if (namespaceIndex == null) {
