@@ -1,11 +1,8 @@
 package me.colinxu.randomoptimization.mixin;
 
-import com.google.common.collect.Sets;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.FilePackResources;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
-import net.minecraft.server.packs.resources.IoSupplier;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -16,11 +13,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.*;
-import java.util.zip.ZipEntry;
+import java.util.Set;
 import java.util.zip.ZipFile;
 
-@Mixin(FilePackResources.class)
+@Mixin(value = FilePackResources.class, priority = 900)
 public abstract class FilePackResourcesMixin {
     @Shadow
     private ZipFile zipFile;
@@ -32,88 +28,72 @@ public abstract class FilePackResourcesMixin {
     private final Object randomoptimization$indexLock = new Object();
 
     @Unique
-    private volatile NavigableMap<String, ZipEntry> randomoptimization$cachedEntries;
+    private volatile FilePackResourcesIndex randomoptimization$index;
 
-    @Inject(method="getOrCreateZipFile", at=@At("RETURN"))
-    private void initIndex(CallbackInfoReturnable<ZipFile> cir) {
-        if(this.randomoptimization$cachedEntries == null && this.zipFile != null){
-            synchronized (this.randomoptimization$indexLock){
-                if(this.randomoptimization$cachedEntries != null)return;
-                TreeMap<String, ZipEntry> entries = new TreeMap<>();
-                Enumeration<? extends ZipEntry> enumeration =
-                        zipFile.entries();
-                while (enumeration.hasMoreElements()) {
-                    ZipEntry entry = enumeration.nextElement();
-                    entries.put(entry.getName(), entry);
-                }
-                this.randomoptimization$cachedEntries =
-                        Collections.unmodifiableNavigableMap(entries);
+    @Unique
+    private boolean randomoptimization$closing;
+
+    @Inject(method = "getOrCreateZipFile", at = @At("RETURN"))
+    private void randomoptimization$initializeIndex(CallbackInfoReturnable<ZipFile> cir) {
+        ZipFile openedZip = cir.getReturnValue();
+        if (openedZip == null || this.randomoptimization$index != null) {
+            return;
+        }
+
+        synchronized (this.randomoptimization$indexLock) {
+            if (this.randomoptimization$index == null
+                    && !this.randomoptimization$closing
+                    && this.zipFile == openedZip) {
+                this.randomoptimization$index = FilePackResourcesIndex.build(openedZip);
             }
         }
     }
 
-    @Inject(method="close", at=@At("HEAD"))
-    private void cleanupIndex(CallbackInfo ci){
-        if(this.randomoptimization$cachedEntries != null){
-            this.randomoptimization$cachedEntries = null;
+    @Inject(method = "close", at = @At("HEAD"))
+    private void randomoptimization$discardIndex(CallbackInfo ci) {
+        synchronized (this.randomoptimization$indexLock) {
+            this.randomoptimization$closing = true;
+            this.randomoptimization$index = null;
+        }
+    }
+
+    @Inject(method = "close", at = @At("RETURN"))
+    private void randomoptimization$finishDiscardingIndex(CallbackInfo ci) {
+        synchronized (this.randomoptimization$indexLock) {
+            this.randomoptimization$index = null;
+            this.randomoptimization$closing = false;
         }
     }
 
     /**
      * @author RandomOptimization
-     * @reason Rewrite the list resources function in order to speed up the function(configurable).
+     * @reason Serve recursive directory listings from a precomputed index.
      */
     @Overwrite
-    public void listResources(@NotNull PackType pPackType, @NotNull String pNamespace, @NotNull String pPath, PackResources.@NotNull ResourceOutput pResourceOutput) {
-        ZipFile zipfile = this.getOrCreateZipFile();
-        if (zipfile != null) {
-            String s = pPackType.getDirectory() + "/" + pNamespace + "/";
-            String s1 = s + pPath + "/";
-            Map<String, ZipEntry> subMap = this.randomoptimization$cachedEntries.subMap(s1, s1 + Character.MAX_VALUE);
+    public void listResources(@NotNull PackType packType, @NotNull String namespace,
+                              @NotNull String path,
+                              PackResources.@NotNull ResourceOutput resourceOutput) {
+        if (this.getOrCreateZipFile() == null) {
+            return;
+        }
 
-            for (Map.Entry<String, ZipEntry> entry : subMap.entrySet()) {
-                ZipEntry zipentry = entry.getValue();
-                if (!zipentry.isDirectory()) {
-                    ResourceLocation resourcelocation = ResourceLocation.tryBuild(pNamespace, zipentry.getName().substring(s.length()));
-                    if (resourcelocation != null) {
-                        pResourceOutput.accept(resourcelocation, IoSupplier.create(zipfile, zipentry));
-                    }
-                }
-            }
-
+        FilePackResourcesIndex index = this.randomoptimization$index;
+        if (index != null) {
+            index.listResources(packType, namespace, path, resourceOutput);
         }
     }
 
     /**
      * @author RandomOptimization
-     * @reason Rewrite the get namespaces function in order to speed up the function(configurable).
+     * @reason Return the namespace set collected while the ZIP index was built.
      */
     @Overwrite
-    public @NotNull Set<String> getNamespaces(@NotNull PackType pType) {
-        ZipFile zipfile = this.getOrCreateZipFile();
-        if (zipfile == null) {
+    public @NotNull Set<String> getNamespaces(@NotNull PackType packType) {
+        if (this.getOrCreateZipFile() == null) {
             return Set.of();
-        } else {
-            Set<String> set = Sets.newHashSet();
-            String prefix = pType.getDirectory() + "/";
-            int prefixLength = prefix.length();
-            String currentPath = this.randomoptimization$cachedEntries.ceilingKey(prefix);
-
-            while(currentPath != null && currentPath.startsWith(prefix)) {
-                String namespace;
-                if(currentPath.indexOf('/', prefixLength) < 0){
-                    namespace = currentPath.substring(prefixLength);
-                }else{
-                    namespace = currentPath.substring(prefixLength, currentPath.indexOf('/', prefixLength));
-                }
-                if(namespace.equals(namespace.toLowerCase(Locale.ROOT))){
-                    set.add(namespace);
-                }
-                String jumpKey = prefix + namespace + "/" + Character.MAX_VALUE;
-                currentPath = this.randomoptimization$cachedEntries.higherKey(jumpKey);
-            }
-
-            return set;
         }
+
+        FilePackResourcesIndex index = this.randomoptimization$index;
+        return index == null ? Set.of() : index.getNamespaces(packType);
     }
 }

@@ -19,7 +19,8 @@ public class Config
             .define("structure_locate_speedup", true);
 
     private static final ForgeConfigSpec.BooleanValue OPTIMIZE_PACK_LOOKUP = BUILDER
-            .comment("Whether to optimize resource looking up in compressed pack(GAME RESTART REQUIRED)，automatically disabled if Quick Pack is installed")
+            .comment("Whether to optimize resource looking up in compressed packs (GAME RESTART REQUIRED). " +
+                    "Automatically disables the overlapping ModernFix and Quick Pack optimizations")
             .define("optimize_pack_lookup", true);
 
     private static final ForgeConfigSpec.BooleanValue FIX_BOAT_FALL_DAMAGE = BUILDER
