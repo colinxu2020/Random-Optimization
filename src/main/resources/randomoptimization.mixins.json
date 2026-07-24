@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "package": "me.colinxu.randomoptimization.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BlockMixin",
+    "BoatMixin",
+    "compat.ModernFixFilePackResourcesMixin",
+    "compat.QuickPackFileResourcesSupplierMixin",
+    "FilePackResourcesMixin",
+    "SharedZipFileAccessMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  },
+  "client": [
+    "ClientMainMixin"
+  ],
+  "plugin": "me.colinxu.randomoptimization.RandomOptimizationMixinConfigPlugin"
+}

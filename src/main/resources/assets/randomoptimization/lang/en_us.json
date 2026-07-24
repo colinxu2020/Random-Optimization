@@ -1,0 +1,13 @@
+{
+  "itemGroup.randomoptimization": "Example Mod Tab",
+  "block.randomoptimization.example_block": "Example Block",
+  "item.randomoptimization.example_item": "Example Item",
+
+  "randomoptimization.configuration.title": "Random Optimization Configs",
+  "randomoptimization.configuration.section.randomoptimization.common.toml": "Random Optimization Configs",
+  "randomoptimization.configuration.section.randomoptimization.common.toml.title": "Random Optimization Configs",
+  "randomoptimization.configuration.items": "Item List",
+  "randomoptimization.configuration.logDirtBlock": "Log Dirt Block",
+  "randomoptimization.configuration.magicNumberIntroduction": "Magic Number Text",
+  "randomoptimization.configuration.magicNumber": "Magic Number"
+}
