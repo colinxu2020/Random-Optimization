@@ -1,29 +1,53 @@
 package me.colinxu.randomoptimization.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.colinxu.randomoptimization.Config;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.function.Supplier;
 
 @Mixin(Block.class)
-public class BlockMixin {
-    @Inject(method="popResource(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/item/ItemStack;)V",at=@At("HEAD"),cancellable = true)
-    private static void injectPopResource(Level pLevel, BlockPos pBlock, ItemStack pStack, CallbackInfo ci) {
-        if(Config.predictableItemDrops) {
-            if(!pLevel.isClientSide()&&!pStack.isEmpty()&&pLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)&&!pLevel.restoringBlockSnapshots) {
-                ItemEntity itemEntity = new ItemEntity(pLevel, pBlock.getX() + 0.5D, pBlock.getY() + 0.5D, pBlock.getZ() + 0.5D, pStack);
-                itemEntity.setDeltaMovement(0, 0, 0);
-                itemEntity.setDefaultPickUpDelay();
-                pLevel.addFreshEntity(itemEntity);
-            }
-            ci.cancel();
+public abstract class BlockMixin {
+    @WrapOperation(
+            method = "popResource(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/item/ItemStack;)V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/level/block/Block;popResource(Lnet/minecraft/world/level/Level;Ljava/util/function/Supplier;Lnet/minecraft/world/item/ItemStack;)V"
+            )
+    )
+    private static void randomoptimization$makeDropPredictable(
+            Level helperLevel,
+            Supplier<ItemEntity> originalSupplier,
+            ItemStack helperStack,
+            Operation<Void> original,
+            Level level,
+            BlockPos pos,
+            ItemStack stack
+    ) {
+        if (!Config.predictableItemDrops) {
+            original.call(helperLevel, originalSupplier, helperStack);
+            return;
         }
+
+        Supplier<ItemEntity> predictableSupplier = () -> {
+            ItemEntity itemEntity = originalSupplier.get();
+            double itemHalfHeight = EntityType.ITEM.getHeight() / 2.0;
+            itemEntity.setPos(
+                    pos.getX() + 0.5,
+                    pos.getY() + 0.5 - itemHalfHeight,
+                    pos.getZ() + 0.5
+            );
+            itemEntity.setDeltaMovement(0.0, 0.2, 0.0);
+            return itemEntity;
+        };
+        original.call(helperLevel, predictableSupplier, helperStack);
     }
 }

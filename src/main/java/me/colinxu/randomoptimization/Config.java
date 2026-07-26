@@ -12,7 +12,7 @@ public class Config
 
     private static final ForgeConfigSpec.BooleanValue PREDICTABLE_ITEM_DROPS = BUILDER
             .comment("Whether to make item drop locations predictable")
-            .define("predictable_item_drops", true);
+            .define("predictable_item_drops", false);
 
     private static final ForgeConfigSpec.BooleanValue STRUCTURE_LOCATE_SPEEDUP = BUILDER
             .comment("Whether to optimize structure locate progress, also fixes MC-249136")
