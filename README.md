@@ -21,7 +21,9 @@ This mod completely or partially replaces the functionality of the following mod
 *   **Drizzleproof:** Partially replaced. If you only need deterministic item drops, you do not need Drizzleproof. However, if you require granular configuration for entity mechanics, please continue using Drizzleproof.
 *   **Quick Pack:** When this mod's compressed-pack index is enabled, Quick Pack's replacement resource-pack implementation is automatically suppressed and this mod's faster index is used instead.
 *   **ModernFix:** When this mod's compressed-pack index is enabled, ModernFix's overlapping ZIP resource-pack index is automatically suppressed. Other ModernFix resource-pack optimizations and all unrelated features remain enabled.
-*   **Boat Break Fix:** This mod completely replaces the functionality of this mod.
+*   **Boat Break Fix:** On both 1.20.1 and 1.21.1, Boat Break Fix's overlapping
+    boat mixin is automatically disabled while `fix_boat_fall_damage` is enabled.
+    Boat Break Fix is left untouched when the RO feature is disabled.
 *   **DFU Loading Optimizations (e.g., LazyDFU):** This mod completely replaces the functionality of these mods.
 
 ## Compatibility & License

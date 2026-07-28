@@ -27,6 +27,13 @@ sourceSets.main.resources {
 
 repositories {
     // Add here additional repositories if required by some of the dependencies below.
+    maven {
+        name = 'Bawnorton'
+        url = 'https://maven.bawnorton.com/releases'
+        content {
+            includeGroup 'com.github.bawnorton.mixinsquared'
+        }
+    }
 }
 
 base {
@@ -103,7 +110,15 @@ dependencies {
     // And its provides the option to then use net.minecraft as the group, and one of; client, server or joined as the module name, plus the game version as version.
     // For all intends and purposes: You can treat this dependency as if it is a normal library you would use.
     implementation "net.neoforged:neoforge:${neo_version}"
+    compileOnly(annotationProcessor(
+            "com.github.bawnorton.mixinsquared:mixinsquared-common:0.3.7-beta.3"))
+    implementation(jarJar(
+            "com.github.bawnorton.mixinsquared:mixinsquared-neoforge:0.3.7-beta.3")) {
+        jarJar.ranged(it, "[0.3.7-beta.3,)")
+    }
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testImplementation(
+            "com.github.bawnorton.mixinsquared:mixinsquared-common:0.3.7-beta.3")
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // Example optional mod dependency with JEI

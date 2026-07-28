@@ -20,7 +20,8 @@ public class Config {
             .define("optimize_pack_lookup", true);
 
     public static final ModConfigSpec.BooleanValue FIX_BOAT_FALL_DAMAGE = BUILDER
-            .comment("Whether to fix boat fall damage")
+            .comment("Whether to fix boat fall damage. When enabled, Boat Break Fix's " +
+                    "overlapping boat mixin is disabled")
             .define("fix_boat_fall_damage", true);
 
     public static final ModConfigSpec.BooleanValue LAZY_DFU = BUILDER
