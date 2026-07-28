@@ -36,6 +36,7 @@ class PathPackResourcesIndexTest {
                 packRoot.resolve("assets/example/models/block/test.json"),
                 "model"
         );
+        write(packRoot.resolve("assets/example/root.txt"), "root");
         write(
                 packRoot.resolve("data/example/tags/items/test.json"),
                 "tag"
@@ -78,6 +79,15 @@ class PathPackResourcesIndexTest {
                         "models/missing.json"
                 )
         ));
+
+        List<ResourceLocation> allResources = new ArrayList<>();
+        index.listResources(
+                PackType.CLIENT_RESOURCES,
+                "example",
+                "",
+                (location, supplier) -> allResources.add(location)
+        );
+        assertEquals(2, allResources.size());
     }
 
     @Test

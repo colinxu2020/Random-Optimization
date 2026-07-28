@@ -25,11 +25,11 @@ public final class PackResourcesIndex {
     }
 
     public static Builder builder() {
-        return new Builder(true);
+        return new Builder(true, true);
     }
 
     public static Builder listingOnlyBuilder() {
-        return new Builder(false);
+        return new Builder(false, false);
     }
 
     public Set<String> getNamespaces(PackType packType) {
@@ -71,10 +71,15 @@ public final class PackResourcesIndex {
 
     public static final class Builder {
         private final TypeIndexBuilder[] builders;
+        private final boolean indexRootDirectory;
 
-        private Builder(boolean indexIndividualResources) {
+        private Builder(
+                boolean indexIndividualResources,
+                boolean indexRootDirectory
+        ) {
             PackType[] packTypes = PackType.values();
             this.builders = new TypeIndexBuilder[packTypes.length];
+            this.indexRootDirectory = indexRootDirectory;
             for (int i = 0; i < packTypes.length; ++i) {
                 this.builders[i] =
                         new TypeIndexBuilder(indexIndividualResources);
@@ -113,7 +118,12 @@ public final class PackResourcesIndex {
             }
 
             typeBuilder.resourcesByNamespace
-                    .computeIfAbsent(namespace, ignored -> new NamespaceIndexBuilder())
+                    .computeIfAbsent(
+                            namespace,
+                            ignored -> new NamespaceIndexBuilder(
+                                    this.indexRootDirectory
+                            )
+                    )
                     .add(resourcePath, new IndexedResource(location, supplier));
         }
 
@@ -155,10 +165,21 @@ public final class PackResourcesIndex {
     }
 
     private static final class NamespaceIndexBuilder {
+        private final boolean indexRootDirectory;
         private final Map<String, List<IndexedResource>> resourcesByDirectory =
                 new HashMap<>();
 
+        private NamespaceIndexBuilder(boolean indexRootDirectory) {
+            this.indexRootDirectory = indexRootDirectory;
+        }
+
         private void add(String resourcePath, IndexedResource resource) {
+            if (this.indexRootDirectory) {
+                this.resourcesByDirectory
+                        .computeIfAbsent("", ignored -> new ArrayList<>())
+                        .add(resource);
+            }
+
             int slash = resourcePath.indexOf('/');
             while (slash >= 0) {
                 String directory = resourcePath.substring(0, slash);
