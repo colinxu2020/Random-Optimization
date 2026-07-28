@@ -15,16 +15,19 @@ public class Config
             .define("predictable_item_drops", false);
 
     private static final ForgeConfigSpec.BooleanValue STRUCTURE_LOCATE_SPEEDUP = BUILDER
-            .comment("Whether to optimize structure locate progress, also fixes MC-249136")
+            .comment("Whether to optimize structure locate progress, also fixes MC-249136. " +
+                    "When enabled, the overlapping Shipwreck Fix mixins are disabled")
             .define("structure_locate_speedup", true);
 
     private static final ForgeConfigSpec.BooleanValue OPTIMIZE_PACK_LOOKUP = BUILDER
-            .comment("Whether to optimize resource looking up in compressed packs (GAME RESTART REQUIRED). " +
-                    "Automatically disables the overlapping ModernFix and Quick Pack optimizations")
+            .comment("Whether to optimize resource looking up in compressed and path-based packs " +
+                    "(GAME RESTART REQUIRED). Automatically disables overlapping resource-pack " +
+                    "optimizations from ModernFix, Quick Pack, and lazyyyyyy")
             .define("optimize_pack_lookup", true);
 
     private static final ForgeConfigSpec.BooleanValue FIX_BOAT_FALL_DAMAGE = BUILDER
-            .comment("Whether to fix boat fall damage")
+            .comment("Whether to fix boat fall damage. When enabled, Boat Break Fix's " +
+                    "overlapping boat mixin is disabled")
             .define("fix_boat_fall_damage", true);
 
     private static final ForgeConfigSpec.BooleanValue LAZY_DFU = BUILDER

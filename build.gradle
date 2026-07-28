@@ -117,6 +117,14 @@ repositories {
     // Put repositories for dependencies here
     // ForgeGradle automatically adds the Forge maven and Maven Central for you
 
+    maven {
+        name = 'Bawnorton'
+        url = 'https://maven.bawnorton.com/releases'
+        content {
+            includeGroup 'com.github.bawnorton.mixinsquared'
+        }
+    }
+
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
     // flatDir {
@@ -153,7 +161,17 @@ dependencies {
         jarJar.ranged(it, "[0.5.2,)")
     }
 
+    compileOnly(annotationProcessor(
+            "com.github.bawnorton.mixinsquared:mixinsquared-common:0.3.7-beta.3"))
+    implementation(jarJar(
+            "com.github.bawnorton.mixinsquared:mixinsquared-forge:0.3.7-beta.3")) {
+        jarJar.ranged(it, "[0.3.7-beta.3,)")
+    }
+
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testImplementation(
+            "com.github.bawnorton.mixinsquared:mixinsquared-common:0.3.7-beta.3")
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test', Test).configure {

@@ -1,7 +1,5 @@
 package me.colinxu.randomoptimization;
 
-import com.electronwill.nightconfig.core.file.FileConfig;
-import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.loading.LoadingModList;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -12,14 +10,18 @@ import org.objectweb.asm.tree.VarInsnNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
 public class RandomOptimizationMixinConfigPlugin implements IMixinConfigPlugin {
     static final String FILE_PACK_RESOURCES_MIXIN =
             "me.colinxu.randomoptimization.mixin.FilePackResourcesMixin";
+    static final String PATH_PACK_RESOURCES_MIXIN =
+            "me.colinxu.randomoptimization.mixin.PathPackResourcesMixin";
+    static final String VANILLA_PACK_RESOURCES_MIXIN =
+            "me.colinxu.randomoptimization.mixin.VanillaPackResourcesMixin";
+    static final String FORGE_PATH_PACK_RESOURCES_MIXIN =
+            "me.colinxu.randomoptimization.mixin.compat.ForgePathPackResourcesMixin";
     static final String MODERN_FIX_FILE_PACK_RESOURCES_MIXIN =
             "me.colinxu.randomoptimization.mixin.compat.ModernFixFilePackResourcesMixin";
     static final String QUICK_PACK_FILE_RESOURCES_SUPPLIER_MIXIN =
@@ -32,28 +34,19 @@ public class RandomOptimizationMixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage){
-        Path configPath = FMLPaths.CONFIGDIR.get().resolve("randomoptimization-common.toml");
-        if(Files.exists(configPath)) {
-            try (FileConfig config = FileConfig.of(configPath)) {
-                config.load();
-                this.lazyDFU = config.getOrElse("lazy_dfu", true);
-                this.optimizePackLookup = config.getOrElse("optimize_pack_lookup", true);
-            } catch (Exception e) {
-                e.printStackTrace();
-                this.lazyDFU = true;
-                this.optimizePackLookup = true;
-            }
-        }else{
-            this.lazyDFU = true;
-            this.optimizePackLookup = true;
-        }
+        StartupConfig config = StartupConfig.load();
+        this.lazyDFU = config.lazyDfu();
+        this.optimizePackLookup = config.optimizePackLookup();
         this.modernFixLoaded = LoadingModList.get().getModFileById("modernfix") != null;
         this.quickPackLoaded = LoadingModList.get().getModFileById("quick_pack") != null;
     }
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName){
-        if(mixinClassName.equals(FILE_PACK_RESOURCES_MIXIN)) {
+        if(mixinClassName.equals(FILE_PACK_RESOURCES_MIXIN)
+                || mixinClassName.equals(PATH_PACK_RESOURCES_MIXIN)
+                || mixinClassName.equals(VANILLA_PACK_RESOURCES_MIXIN)
+                || mixinClassName.equals(FORGE_PATH_PACK_RESOURCES_MIXIN)) {
             return this.optimizePackLookup;
         }
         if(mixinClassName.equals(MODERN_FIX_FILE_PACK_RESOURCES_MIXIN)) {
