@@ -46,7 +46,9 @@ public class RandomOptimizationMixinConfigPlugin implements IMixinConfigPlugin {
             return this.getBooleanConfig("lazy_dfu");
         }
         if (mixinClassName.equals("me.colinxu.randomoptimization.mixin.FilePackResourcesMixin")
-                || mixinClassName.equals("me.colinxu.randomoptimization.mixin.SharedZipFileAccessMixin")) {
+                || mixinClassName.equals("me.colinxu.randomoptimization.mixin.PathPackResourcesMixin")
+                || mixinClassName.equals("me.colinxu.randomoptimization.mixin.SharedZipFileAccessMixin")
+                || mixinClassName.equals("me.colinxu.randomoptimization.mixin.VanillaPackResourcesMixin")) {
             return this.getBooleanConfig("optimize_pack_lookup");
         }
         if (mixinClassName.equals(QUICK_PACK_COMPAT_MIXIN)) {

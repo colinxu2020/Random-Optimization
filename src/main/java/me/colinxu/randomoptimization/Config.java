@@ -9,8 +9,13 @@ public class Config {
             .comment("Whether to make item drop locations predictable")
             .define("predictable_item_drops", true);
 
+    public static final ModConfigSpec.BooleanValue STRUCTURE_LOCATE_SPEEDUP = BUILDER
+            .comment("Whether to reject impossible structure chunks before reading them from disk")
+            .define("structure_locate_speedup", true);
+
     public static final ModConfigSpec.BooleanValue OPTIMIZE_PACK_LOOKUP = BUILDER
-            .comment("Whether to optimize resource looking up in compressed packs (GAME RESTART REQUIRED). " +
+            .comment("Whether to optimize resource looking up in compressed and path-based packs " +
+                    "(GAME RESTART REQUIRED). " +
                     "Automatically disables the overlapping ModernFix and Quick Pack optimizations")
             .define("optimize_pack_lookup", true);
 

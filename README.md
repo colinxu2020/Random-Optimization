@@ -5,9 +5,9 @@
 
 This mod implements the following features to significantly optimize game performance and fix existing bugs. All features can be toggled via the configuration file.
 
-*   **(1.20.1)Fixes MC-249136:** This bug causes severe server lag (hangs) when players attempt to locate Buried Treasure (most notably), or when opening/breaking chests containing maps, or using the `/locate` command. This mod employs simple checks to drastically reduce the enumeration required during structure searching, thereby optimizing speed.
+*   **Faster structure locating / MC-249136 mitigation:** Rejects impossible candidate chunks before touching chunk storage. This avoids most blocking storage scans when locating low-frequency structures such as buried treasure on both 1.20.1 and 1.21.1.
 *   **Deterministic Item Drops:** The mod de-randomizes the spawn position of dropped items. This makes designing Redstone contraptions much simpler and easier. Additionally, by reducing the usage of RNG (Random Number Generation), it improves game performance.
-*   **Optimized Resource/Data Pack Loading:**  Improves the loading speed of Resource Packs and Data Packs. The mod Builds a compact index for compressed Resource Packs and Data Packs on first access, replacing repeated full-ZIP scans during namespace discovery and recursive resource listing. This reduces reload time and temporary allocations, especially for large packs and modpacks containing many assets.
+*   **Optimized Resource/Data Pack Loading:** Builds a compact index for compressed packs, path-based packs (including NeoForge mod resources), and vanilla resources on first access. This replaces repeated ZIP scans, UnionFileSystem walks, missing-directory exceptions, and file existence checks during reloads.
 *   **Boat Fall Damage Fix:** Fixes an issue where boats take fall damage when falling from specific heights. This aligns behavior with the MC-Wiki description and newer Minecraft versions, while also improving performance.
 *   **DFU Optimization:** Defers (lazy loads) the DataFixerUpper (DFU) to improve game startup speed.
 

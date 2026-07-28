@@ -8,7 +8,10 @@
     "compat.ModernFixFilePackResourcesMixin",
     "compat.QuickPackFileResourcesSupplierMixin",
     "FilePackResourcesMixin",
-    "SharedZipFileAccessMixin"
+    "PathPackResourcesMixin",
+    "SharedZipFileAccessMixin",
+    "StructureCheckMixin",
+    "VanillaPackResourcesMixin"
   ],
   "injectors": {
     "defaultRequire": 1
