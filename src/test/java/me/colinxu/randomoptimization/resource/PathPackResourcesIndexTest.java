@@ -2,6 +2,7 @@ package me.colinxu.randomoptimization.resource;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.linkfs.LinkFileSystem;
 import net.minecraft.server.packs.resources.IoSupplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -194,6 +196,47 @@ class PathPackResourcesIndexTest {
                         "models/low_only.json"
                 ))
         );
+    }
+
+    @Test
+    void indexesMinecraftLinkFileSystemRoots() throws IOException {
+        Path shader = this.temporaryDirectory.resolve("blit_screen.json");
+        write(shader, "shader");
+
+        try (FileSystem fileSystem = LinkFileSystem.builder()
+                .put(
+                        List.of(
+                                "assets",
+                                "minecraft",
+                                "shaders",
+                                "core",
+                                "blit_screen.json"
+                        ),
+                        shader
+                )
+                .build("test-vanilla-resources")) {
+            Map<PackType, List<Path>> pathsForType =
+                    new EnumMap<>(PackType.class);
+            pathsForType.put(
+                    PackType.CLIENT_RESOURCES,
+                    List.of(fileSystem.getPath("/assets"))
+            );
+
+            PackResourcesIndex index =
+                    PathPackResourcesIndex.build(pathsForType);
+
+            assertNotNull(index);
+            assertEquals(
+                    "shader",
+                    read(index.getResource(
+                            PackType.CLIENT_RESOURCES,
+                            ResourceLocation.fromNamespaceAndPath(
+                                    "minecraft",
+                                    "shaders/core/blit_screen.json"
+                            )
+                    ))
+            );
+        }
     }
 
     private static void write(Path path, String contents)
