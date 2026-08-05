@@ -34,7 +34,9 @@ public final class PathPackResourcesIndex {
                 );
             }
             return builder.build();
-        } catch (IOException exception) {
+        } catch (IOException | IllegalArgumentException exception) {
+            // An index is optional. Fall back to vanilla for path providers
+            // whose traversal or relativize contract is more restrictive.
             return null;
         }
     }
@@ -55,7 +57,9 @@ public final class PathPackResourcesIndex {
                 }
             }
             return builder.build();
-        } catch (IOException exception) {
+        } catch (IOException | IllegalArgumentException exception) {
+            // An index is optional. Fall back to vanilla for path providers
+            // whose traversal or relativize contract is more restrictive.
             return null;
         }
     }
@@ -72,6 +76,14 @@ public final class PathPackResourcesIndex {
                         Path directory,
                         BasicFileAttributes attributes
                 ) {
+                    // Minecraft's LinkFSPath rejects root.relativize(root),
+                    // unlike the default NIO provider. The walk root cannot be
+                    // a namespace anyway, so do not ask the provider to
+                    // relativize it.
+                    if (typeRoot.equals(directory)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+
                     Path relative = typeRoot.relativize(directory);
                     if (relative.getNameCount() == 1) {
                         builder.addNamespace(
