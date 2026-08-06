@@ -26,6 +26,13 @@ import java.util.Set;
 
 @Mixin(value = PathPackResources.class, remap = false)
 public abstract class ForgePathPackResourcesMixin {
+    /*
+     * PathPackResources is a Forge class and therefore must not be remapped,
+     * but these three methods override Minecraft APIs. ForgeGradle exposes
+     * their mapped names in development while production Forge keeps their
+     * SRG names. Keep both selectors so the injections work in either
+     * environment.
+     */
     @Shadow
     protected abstract Path resolve(String... paths);
 
@@ -69,7 +76,7 @@ public abstract class ForgePathPackResourcesMixin {
     }
 
     @Inject(
-            method = "getResource",
+            method = {"getResource", "m_214146_"},
             at = @At("HEAD"),
             cancellable = true,
             remap = false
@@ -92,7 +99,7 @@ public abstract class ForgePathPackResourcesMixin {
     }
 
     @Inject(
-            method = "listResources",
+            method = {"listResources", "m_8031_"},
             at = @At("HEAD"),
             cancellable = true,
             remap = false
@@ -116,7 +123,7 @@ public abstract class ForgePathPackResourcesMixin {
     }
 
     @Inject(
-            method = "getNamespaces",
+            method = {"getNamespaces", "m_5698_"},
             at = @At("HEAD"),
             cancellable = true,
             remap = false
