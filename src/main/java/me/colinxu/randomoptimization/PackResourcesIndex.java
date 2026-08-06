@@ -32,6 +32,10 @@ public final class PackResourcesIndex {
         return new Builder(false, false);
     }
 
+    public static Builder listingOnlyBuilder(boolean indexRootDirectory) {
+        return new Builder(false, indexRootDirectory);
+    }
+
     public Set<String> getNamespaces(PackType packType) {
         return this.indexesByType[packType.ordinal()].namespaces;
     }
