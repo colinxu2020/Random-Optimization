@@ -3,7 +3,6 @@ package me.colinxu.randomoptimization;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.IoSupplier;
-import net.neoforged.fml.loading.LoadingModList;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -50,8 +49,32 @@ public final class FilePackResourcesIndex {
             String path,
             PackResources.ResourceOutput output
     ) {
+        this.listResources(
+                packPrefix,
+                packType,
+                namespace,
+                path,
+                false,
+                output
+        );
+    }
+
+    public void listResources(
+            String packPrefix,
+            PackType packType,
+            String namespace,
+            String path,
+            boolean normalizeArchivePrefix,
+            PackResources.ResourceOutput output
+    ) {
         this.getOrCreateIndex(packPrefix)
-                .listResources(packType, namespace, path, output);
+                .listResources(
+                        packType,
+                        namespace,
+                        path,
+                        normalizeArchivePrefix,
+                        output
+                );
     }
 
     private synchronized PackResourcesIndex getOrCreateIndex(String packPrefix) {
@@ -72,9 +95,7 @@ public final class FilePackResourcesIndex {
         }
 
         PackResourcesIndex.Builder builder =
-                PackResourcesIndex.listingOnlyBuilder(
-                        LoadingModList.get().getModFileById("fancymenu") != null
-                );
+                PackResourcesIndex.listingOnlyBuilder();
         for (ZipEntry entry : this.entries) {
             String entryName = entry.getName();
             for (int i = 0; i < typePrefixes.length; ++i) {

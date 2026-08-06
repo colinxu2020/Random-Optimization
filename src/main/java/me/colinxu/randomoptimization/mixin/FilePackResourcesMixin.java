@@ -5,6 +5,7 @@ import me.colinxu.randomoptimization.SharedZipFileAccessIndex;
 import net.minecraft.server.packs.FilePackResources;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
+import net.neoforged.fml.loading.LoadingModList;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -48,7 +49,15 @@ public abstract class FilePackResourcesMixin {
         FilePackResourcesIndex index =
                 ((SharedZipFileAccessIndex) this.zipFileAccess).randomoptimization$getIndex();
         if (index != null) {
-            index.listResources(this.prefix, packType, namespace, path, output);
+            index.listResources(
+                    this.prefix,
+                    packType,
+                    namespace,
+                    path,
+                    path.isEmpty()
+                            && LoadingModList.get().getModFileById("fancymenu") != null,
+                    output
+            );
         }
         ci.cancel();
     }

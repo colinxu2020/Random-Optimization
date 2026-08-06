@@ -32,10 +32,6 @@ public final class PackResourcesIndex {
         return new Builder(false, false);
     }
 
-    public static Builder listingOnlyBuilder(boolean indexRootDirectory) {
-        return new Builder(false, indexRootDirectory);
-    }
-
     public Set<String> getNamespaces(PackType packType) {
         return this.indexesByType[packType.ordinal()].namespaces;
     }
@@ -56,6 +52,16 @@ public final class PackResourcesIndex {
             String path,
             PackResources.ResourceOutput output
     ) {
+        this.listResources(packType, namespace, path, false, output);
+    }
+
+    public void listResources(
+            PackType packType,
+            String namespace,
+            String path,
+            boolean normalizeArchivePrefix,
+            PackResources.ResourceOutput output
+    ) {
         NamespaceIndex namespaceIndex = this.indexesByType[packType.ordinal()]
                 .resourcesByNamespace
                 .get(namespace);
@@ -63,7 +69,9 @@ public final class PackResourcesIndex {
             return;
         }
 
-        IndexedResource[] resources = namespaceIndex.resourcesByDirectory.get(path);
+        IndexedResource[] resources = normalizeArchivePrefix && path.isEmpty()
+                ? namespaceIndex.resources
+                : namespaceIndex.resourcesByDirectory.get(path);
         if (resources == null) {
             return;
         }
@@ -170,6 +178,7 @@ public final class PackResourcesIndex {
 
     private static final class NamespaceIndexBuilder {
         private final boolean indexRootDirectory;
+        private final List<IndexedResource> resources = new ArrayList<>();
         private final Map<String, List<IndexedResource>> resourcesByDirectory =
                 new HashMap<>();
 
@@ -178,6 +187,8 @@ public final class PackResourcesIndex {
         }
 
         private void add(String resourcePath, IndexedResource resource) {
+            this.resources.add(resource);
+
             if (this.indexRootDirectory) {
                 this.resourcesByDirectory
                         .computeIfAbsent("", ignored -> new ArrayList<>())
@@ -202,7 +213,10 @@ public final class PackResourcesIndex {
                             directory,
                             resources.toArray(IndexedResource[]::new)
                     ));
-            return new NamespaceIndex(Map.copyOf(directoryIndexes));
+            return new NamespaceIndex(
+                    this.resources.toArray(IndexedResource[]::new),
+                    Map.copyOf(directoryIndexes)
+            );
         }
     }
 
@@ -220,6 +234,7 @@ public final class PackResourcesIndex {
     }
 
     private record NamespaceIndex(
+            IndexedResource[] resources,
             Map<String, IndexedResource[]> resourcesByDirectory
     ) {
     }
