@@ -25,6 +25,8 @@ public final class RandomOptimizationMixinCanceller implements MixinCanceller {
     );
     private static final String BOAT_BREAK_FIX_MIXIN =
             "elocindev.boatbreakfix.forge.mixin.BoatMixin";
+    private static final String FANCY_MENU_FILE_PACK_RESOURCES_MIXIN =
+            "de.keksuccino.fancymenu.mixin.mixins.common.client.MixinFilePackResources";
     private static final Set<String> LAZYYYYY_PACK_MIXINS = Set.of(
             "FilePackResourcesMixin",
             "PathPackResourcesMixin",
@@ -51,6 +53,11 @@ public final class RandomOptimizationMixinCanceller implements MixinCanceller {
             List<String> targetClassNames,
             String mixinClassName
     ) {
+        if (this.optimizePackLookup
+                && mixinClassName.equals(FANCY_MENU_FILE_PACK_RESOURCES_MIXIN)) {
+            return true;
+        }
+
         String feature = this.cancelledFeature(mixinClassName);
         if (feature == null) {
             return false;

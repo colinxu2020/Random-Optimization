@@ -4,6 +4,7 @@ import me.colinxu.randomoptimization.resource.FilePackResourcesIndex;
 import net.minecraft.server.packs.FilePackResources;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
+import net.minecraftforge.fml.loading.LoadingModList;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -80,7 +81,14 @@ public abstract class FilePackResourcesMixin {
 
         FilePackResourcesIndex index = this.randomoptimization$index;
         if (index != null) {
-            index.listResources(packType, namespace, path, resourceOutput);
+            index.listResources(
+                    packType,
+                    namespace,
+                    path,
+                    path.isEmpty()
+                            && LoadingModList.get().getModFileById("fancymenu") != null,
+                    resourceOutput
+            );
         }
     }
 

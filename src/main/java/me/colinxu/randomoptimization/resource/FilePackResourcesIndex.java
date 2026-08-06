@@ -71,13 +71,21 @@ public final class FilePackResourcesIndex {
 
     public void listResources(PackType packType, String namespace, String path,
                               PackResources.ResourceOutput output) {
+        this.listResources(packType, namespace, path, false, output);
+    }
+
+    public void listResources(PackType packType, String namespace, String path,
+                              boolean normalizeArchivePrefix,
+                              PackResources.ResourceOutput output) {
         NamespaceIndex namespaceIndex =
                 this.indexesByType[packType.ordinal()].resourcesByNamespace.get(namespace);
         if (namespaceIndex == null) {
             return;
         }
 
-        IndexedResource[] resources = namespaceIndex.resourcesByDirectory.get(path);
+        IndexedResource[] resources = normalizeArchivePrefix && path.isEmpty()
+                ? namespaceIndex.resources
+                : namespaceIndex.resourcesByDirectory.get(path);
         if (resources == null) {
             return;
         }
@@ -158,6 +166,7 @@ public final class FilePackResourcesIndex {
 
     private static final class NamespaceIndexBuilder {
         private final String namespace;
+        private final List<IndexedResource> resources = new ArrayList<>();
         private final Map<String, List<IndexedResource>> resourcesByDirectory = new HashMap<>();
 
         private NamespaceIndexBuilder(String namespace) {
@@ -165,6 +174,8 @@ public final class FilePackResourcesIndex {
         }
 
         private void add(String resourcePath, IndexedResource resource) {
+            this.resources.add(resource);
+
             // A listResources("models") request is recursive, so models/a/b.json is
             // indexed under both "models" and "models/a". Empty and trailing path
             // components are intentionally retained to match literal ZIP prefix behavior.
@@ -183,7 +194,10 @@ public final class FilePackResourcesIndex {
                     new HashMap<>(capacityFor(this.resourcesByDirectory.size()));
             this.resourcesByDirectory.forEach((directory, resources) ->
                     directoryIndexes.put(directory, resources.toArray(IndexedResource[]::new)));
-            return new NamespaceIndex(directoryIndexes);
+            return new NamespaceIndex(
+                    this.resources.toArray(IndexedResource[]::new),
+                    directoryIndexes
+            );
         }
     }
 
@@ -208,7 +222,10 @@ public final class FilePackResourcesIndex {
                              Map<String, NamespaceIndex> resourcesByNamespace) {
     }
 
-    private record NamespaceIndex(Map<String, IndexedResource[]> resourcesByDirectory) {
+    private record NamespaceIndex(
+            IndexedResource[] resources,
+            Map<String, IndexedResource[]> resourcesByDirectory
+    ) {
     }
 
     /** One object serves as both the cached result record and its cached stream supplier. */
