@@ -2,6 +2,7 @@ package me.colinxu.randomoptimization;
 
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -14,11 +15,16 @@ public class RandomOptimization
     public static final String MODID = "randomoptimization";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public RandomOptimization(FMLJavaModLoadingContext context)
-    {
-        IEventBus modEventBus = context.getModEventBus();
+    public RandomOptimization() {
+        IEventBus modEventBus =
+                FMLJavaModLoadingContext.get().getModEventBus();
+
         modEventBus.addListener(this::commonSetup);
-        context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+
+        ModLoadingContext.get().registerConfig(
+                ModConfig.Type.COMMON,
+                Config.SPEC
+        );
     }
 
     private void commonSetup(final FMLCommonSetupEvent event)
