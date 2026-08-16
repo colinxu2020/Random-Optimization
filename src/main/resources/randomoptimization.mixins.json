@@ -6,7 +6,6 @@
     "BlockMixin",
     "BoatMixin",
     "compat.ModernFixFilePackResourcesMixin",
-    "compat.QuickPackFileResourcesSupplierMixin",
     "FilePackResourcesMixin",
     "PathPackResourcesMixin",
     "SharedZipFileAccessMixin",

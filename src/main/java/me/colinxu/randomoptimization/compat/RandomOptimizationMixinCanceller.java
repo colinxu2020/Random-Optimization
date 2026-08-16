@@ -6,9 +6,11 @@ import me.colinxu.randomoptimization.StartupConfig;
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.Set;
 
 /**
- * Prevents Boat Break Fix from applying the boat mixin superseded by RO.
+ * Prevents other mods from applying only the mixins superseded by enabled RO
+ * features. Unrelated functionality in those mods remains active.
  */
 public final class RandomOptimizationMixinCanceller implements MixinCanceller {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -16,6 +18,10 @@ public final class RandomOptimizationMixinCanceller implements MixinCanceller {
             "elocindev.boatbreakfix.forge.mixin.BoatMixin";
     private static final String FANCY_MENU_FILE_PACK_RESOURCES_MIXIN =
             "de.keksuccino.fancymenu.mixin.mixins.common.client.MixinFilePackResources";
+    private static final Set<String> QUICK_PACK_RESOURCE_MIXINS = Set.of(
+            "me.drex.quickpack.mixin.FileResourcesSupplierMixin",
+            "me.drex.quickpack.mixin.FilePackResourcesMixin"
+    );
 
     private final boolean fixBoatFallDamage;
     private final boolean optimizePackLookup;
@@ -46,6 +52,15 @@ public final class RandomOptimizationMixinCanceller implements MixinCanceller {
     ) {
         if (this.optimizePackLookup
                 && mixinClassName.equals(FANCY_MENU_FILE_PACK_RESOURCES_MIXIN)) {
+            return true;
+        }
+
+        if (this.optimizePackLookup
+                && QUICK_PACK_RESOURCE_MIXINS.contains(mixinClassName)) {
+            LOGGER.info(
+                    "Disabled overlapping Quick Pack compressed-pack mixin {} because Random Optimization's replacement is enabled",
+                    mixinClassName
+            );
             return true;
         }
 

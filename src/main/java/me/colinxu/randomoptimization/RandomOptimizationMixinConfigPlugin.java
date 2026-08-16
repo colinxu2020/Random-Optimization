@@ -13,12 +13,9 @@ import java.util.Set;
 public class RandomOptimizationMixinConfigPlugin implements IMixinConfigPlugin {
     private static final String MODERN_FIX_COMPAT_MIXIN =
             "me.colinxu.randomoptimization.mixin.compat.ModernFixFilePackResourcesMixin";
-    private static final String QUICK_PACK_COMPAT_MIXIN =
-            "me.colinxu.randomoptimization.mixin.compat.QuickPackFileResourcesSupplierMixin";
 
     private final Map<String, Boolean> booleanConfigCache = new HashMap<>();
     private boolean modernFixLoaded;
-    private boolean quickPackLoaded;
 
     protected boolean getBooleanConfig(String key){
         return this.booleanConfigCache.computeIfAbsent(key, this::loadBooleanConfig);
@@ -39,9 +36,6 @@ public class RandomOptimizationMixinConfigPlugin implements IMixinConfigPlugin {
                 || mixinClassName.equals("me.colinxu.randomoptimization.mixin.VanillaPackResourcesMixin")) {
             return this.getBooleanConfig("optimize_pack_lookup");
         }
-        if (mixinClassName.equals(QUICK_PACK_COMPAT_MIXIN)) {
-            return this.quickPackLoaded && this.getBooleanConfig("optimize_pack_lookup");
-        }
         if (mixinClassName.equals(MODERN_FIX_COMPAT_MIXIN)) {
             return this.modernFixLoaded && this.getBooleanConfig("optimize_pack_lookup");
         }
@@ -53,8 +47,6 @@ public class RandomOptimizationMixinConfigPlugin implements IMixinConfigPlugin {
     public void onLoad(String mixinPackage) {
         this.modernFixLoaded =
                 LoadingModList.get().getModFileById("modernfix") != null;
-        this.quickPackLoaded =
-                LoadingModList.get().getModFileById("quick_pack") != null;
     }
     @Override public String getRefMapperConfig() { return null; }
     @Override public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {}
