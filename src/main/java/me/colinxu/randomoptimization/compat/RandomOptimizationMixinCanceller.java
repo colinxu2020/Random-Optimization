@@ -33,6 +33,10 @@ public final class RandomOptimizationMixinCanceller implements MixinCanceller {
             "VanillaPackResourcesMixin",
             "ForgePathPackResourcesMixin"
     );
+    private static final Set<String> QUICK_PACK_RESOURCE_MIXINS = Set.of(
+            "me.drex.quickpack.mixin.FileResourcesSupplierMixin",
+            "me.drex.quickpack.mixin.FilePackResourcesMixin"
+    );
 
     private final boolean structureLocateSpeedup;
     private final boolean fixBoatFallDamage;
@@ -90,6 +94,11 @@ public final class RandomOptimizationMixinCanceller implements MixinCanceller {
                 && mixinClassName.contains(".pack_resources_cache.")
                 && LAZYYYYY_PACK_MIXINS.contains(simpleName(mixinClassName))) {
             return "lazyyyyy pack-resource cache";
+        }
+
+        if (this.optimizePackLookup
+                && QUICK_PACK_RESOURCE_MIXINS.contains(mixinClassName)) {
+            return "Quick Pack compressed-pack optimization";
         }
 
         return null;

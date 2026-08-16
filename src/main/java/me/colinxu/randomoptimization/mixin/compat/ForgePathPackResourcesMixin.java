@@ -50,22 +50,18 @@ public abstract class ForgePathPackResourcesMixin {
         if (!this.randomoptimization$indexInitialized) {
             synchronized (this) {
                 if (!this.randomoptimization$indexInitialized) {
-                    Path assets = this.resolve(
-                            PackType.CLIENT_RESOURCES.getDirectory()
-                    );
-                    Path data = this.resolve(
-                            PackType.SERVER_DATA.getDirectory()
-                    );
-                    this.randomoptimization$dataRootMissing =
-                            !Files.isDirectory(data);
-
                     Map<PackType, List<Path>> roots =
                             new EnumMap<>(PackType.class);
-                    roots.put(
-                            PackType.CLIENT_RESOURCES,
-                            List.of(assets)
-                    );
-                    roots.put(PackType.SERVER_DATA, List.of(data));
+                    for (PackType packType : PackType.values()) {
+                        Path typeRoot = this.resolve(
+                                packType.getDirectory()
+                        );
+                        roots.put(packType, List.of(typeRoot));
+                        if (packType == PackType.SERVER_DATA) {
+                            this.randomoptimization$dataRootMissing =
+                                    !Files.isDirectory(typeRoot);
+                        }
+                    }
                     this.randomoptimization$index =
                             PathPackResourcesIndex.buildForge(roots);
                     this.randomoptimization$indexInitialized = true;
