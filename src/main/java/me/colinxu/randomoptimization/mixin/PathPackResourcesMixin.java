@@ -55,7 +55,10 @@ public abstract class PathPackResourcesMixin {
     ) {
         PackResourcesIndex index = this.randomoptimization$getIndex();
         if (index != null) {
-            cir.setReturnValue(index.getResource(packType, location));
+            IoSupplier<InputStream> resource = index.getResource(packType, location);
+            if (resource != null) {
+                cir.setReturnValue(resource);
+            }
         }
     }
 

@@ -88,9 +88,10 @@ public abstract class ForgePathPackResourcesMixin {
                     location.getPath().startsWith("lang/")
                             ? PackType.CLIENT_RESOURCES
                             : packType;
-            cir.setReturnValue(
-                    index.getResource(effectiveType, location)
-            );
+            IoSupplier<InputStream> resource = index.getResource(effectiveType, location);
+            if (resource != null) {
+                cir.setReturnValue(resource);
+            }
         }
     }
 
