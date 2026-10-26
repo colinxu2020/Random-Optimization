@@ -62,6 +62,21 @@ public final class PackResourcesIndex {
             boolean normalizeArchivePrefix,
             PackResources.ResourceOutput output
     ) {
+        TypeIndex typeIndex =
+                this.indexesByType[packType.ordinal()];
+
+        ResourceLocation exactLocation =
+                ResourceLocation.tryBuild(namespace, path);
+
+        if (exactLocation != null) {
+            IoSupplier<InputStream> exactResource =
+                    typeIndex.resourcesByLocation.get(exactLocation);
+
+            if (exactResource != null) {
+                output.accept(exactLocation, exactResource);
+            }
+        }
+
         NamespaceIndex namespaceIndex = this.indexesByType[packType.ordinal()]
                 .resourcesByNamespace
                 .get(namespace);
