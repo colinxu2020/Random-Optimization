@@ -49,20 +49,23 @@ public final class PackResourcesIndex {
             String path,
             PackResources.ResourceOutput output
     ) {
-        NamespaceIndex namespaceIndex = this.indexesByType[packType.ordinal()]
-                .resourcesByNamespace
-                .get(namespace);
-        if (namespaceIndex == null) {
+        TypeIndex typeIndex = this.indexesByType[packType.ordinal()];
+        ResourceLocation exactLocation = ResourceLocation.tryBuild(namespace, path);
+        if(exactLocation != null){
+            IoSupplier<InputStream> exactResource = typeIndex.resourcesByLocation.get(exactLocation);
+            if(exactResource != null){
+                output.accept(exactLocation, exactResource);
+            }
+        }
+        NamespaceIndex namespaceIndex = typeIndex.resourcesByNamespace.get(namespace);
+        if(namespaceIndex == null){
             return;
         }
-
-        IndexedResource[] resources =
-                namespaceIndex.resourcesByDirectory.get(path);
-        if (resources == null) {
+        IndexedResource[] resources = namespaceIndex.resourcesByDirectory.get(path);
+        if(resources == null){
             return;
         }
-
-        for (IndexedResource resource : resources) {
+        for (IndexedResource resource: resources) {
             output.accept(resource.location, resource.supplier);
         }
     }
