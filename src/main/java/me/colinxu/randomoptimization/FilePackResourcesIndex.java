@@ -1,5 +1,6 @@
 package me.colinxu.randomoptimization;
 
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.IoSupplier;
@@ -67,14 +68,48 @@ public final class FilePackResourcesIndex {
             boolean normalizeArchivePrefix,
             PackResources.ResourceOutput output
     ) {
+        if (path.isEmpty()) {
+            this.getOrCreateIndex(packPrefix)
+                    .listResources(
+                            packType,
+                            namespace,
+                            path,
+                            normalizeArchivePrefix,
+                            output
+                    );
+            return;
+        }
+
+        boolean[] listed = {false};
         this.getOrCreateIndex(packPrefix)
                 .listResources(
                         packType,
                         namespace,
                         path,
                         normalizeArchivePrefix,
-                        output
+                        (location, supplier) -> {
+                            listed[0] = true;
+                            output.accept(location, supplier);
+                        }
                 );
+
+        // The listing-only index only covers directory prefixes, so a query
+        // naming a file directly (e.g. "sounds.json") misses it. The ZIP
+        // central directory already is an exact-path lookup table; ask it on
+        // this cold path instead of keeping a redundant per-file map.
+        if (listed[0]) {
+            return;
+        }
+        ResourceLocation location = ResourceLocation.tryBuild(namespace, path);
+        if (location == null) {
+            return;
+        }
+        String entryName = (packPrefix.isEmpty() ? "" : packPrefix + "/")
+                + packType.getDirectory() + "/" + namespace + "/" + path;
+        ZipEntry entry = this.zipFile.getEntry(entryName);
+        if (entry != null && !entry.isDirectory()) {
+            output.accept(location, IoSupplier.create(this.zipFile, entry));
+        }
     }
 
     private synchronized PackResourcesIndex getOrCreateIndex(String packPrefix) {
