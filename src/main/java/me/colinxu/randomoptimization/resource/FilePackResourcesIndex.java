@@ -26,9 +26,11 @@ import java.util.zip.ZipFile;
  * Mixin reserves that entire package tree for mixin classes.</p>
  */
 public final class FilePackResourcesIndex {
+    private final ZipFile zipFile;
     private final TypeIndex[] indexesByType;
 
-    private FilePackResourcesIndex(TypeIndex[] indexesByType) {
+    private FilePackResourcesIndex(ZipFile zipFile, TypeIndex[] indexesByType) {
+        this.zipFile = zipFile;
         this.indexesByType = indexesByType;
     }
 
@@ -62,7 +64,7 @@ public final class FilePackResourcesIndex {
         for (int i = 0; i < indexes.length; ++i) {
             indexes[i] = builders[i].build();
         }
-        return new FilePackResourcesIndex(indexes);
+        return new FilePackResourcesIndex(zipFile, indexes);
     }
 
     public Set<String> getNamespaces(PackType packType) {
@@ -86,12 +88,27 @@ public final class FilePackResourcesIndex {
         IndexedResource[] resources = normalizeArchivePrefix && path.isEmpty()
                 ? namespaceIndex.resources
                 : namespaceIndex.resourcesByDirectory.get(path);
-        if (resources == null) {
+        if (resources != null) {
+            for (IndexedResource resource : resources) {
+                output.accept(resource.location, resource);
+            }
             return;
         }
 
-        for (IndexedResource resource : resources) {
-            output.accept(resource.location, resource);
+        // The directory buckets only cover path prefixes, so a query naming a
+        // file directly (e.g. "sounds.json") misses them. The ZIP central
+        // directory is already an exact-path lookup table; ask it instead of
+        // keeping a redundant per-file map in the index.
+        if (!path.isEmpty()) {
+            ResourceLocation location = ResourceLocation.tryBuild(namespace, path);
+            if (location == null) {
+                return;
+            }
+            ZipEntry entry = this.zipFile.getEntry(
+                    packType.getDirectory() + '/' + namespace + '/' + path);
+            if (entry != null && !entry.isDirectory()) {
+                output.accept(location, new IndexedResource(location, this.zipFile, entry));
+            }
         }
     }
 
