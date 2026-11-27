@@ -1,6 +1,7 @@
 package me.colinxu.randomoptimization.mixin;
 
 import me.colinxu.randomoptimization.resource.PackResourcesIndex;
+import me.colinxu.randomoptimization.resource.PackTypeCache;
 import me.colinxu.randomoptimization.resource.PathPackResourcesIndex;
 import net.minecraft.FileUtil;
 import net.minecraft.resources.ResourceLocation;
@@ -29,23 +30,14 @@ public abstract class VanillaPackResourcesMixin {
     private Map<PackType, List<Path>> pathsForType;
 
     @Unique
-    private volatile boolean randomoptimization$indexInitialized;
+    private final PackTypeCache<PackResourcesIndex> randomoptimization$indexes = new PackTypeCache<>();
 
     @Unique
-    private PackResourcesIndex randomoptimization$index;
-
-    @Unique
-    private PackResourcesIndex randomoptimization$getIndex() {
-        if (!this.randomoptimization$indexInitialized) {
-            synchronized (this) {
-                if (!this.randomoptimization$indexInitialized) {
-                    this.randomoptimization$index =
-                            PathPackResourcesIndex.build(this.pathsForType);
-                    this.randomoptimization$indexInitialized = true;
-                }
-            }
-        }
-        return this.randomoptimization$index;
+    private PackResourcesIndex randomoptimization$getIndex(PackType packType) {
+        return randomoptimization$indexes.get(packType, () -> {
+            List<Path> roots = pathsForType.getOrDefault(packType, List.of());
+            return PathPackResourcesIndex.build(Map.of(packType, roots));
+        });
     }
 
     @Inject(method = "getResource", at = @At("HEAD"), cancellable = true)
@@ -54,7 +46,7 @@ public abstract class VanillaPackResourcesMixin {
             ResourceLocation location,
             CallbackInfoReturnable<IoSupplier<InputStream>> cir
     ) {
-        PackResourcesIndex index = this.randomoptimization$getIndex();
+        PackResourcesIndex index = this.randomoptimization$getIndex(packType);
         if (index != null) {
             cir.setReturnValue(index.getResource(packType, location));
         }
@@ -72,7 +64,7 @@ public abstract class VanillaPackResourcesMixin {
             return;
         }
 
-        PackResourcesIndex index = this.randomoptimization$getIndex();
+        PackResourcesIndex index = this.randomoptimization$getIndex(packType);
         if (index != null) {
             index.listResources(packType, namespace, path, output);
             ci.cancel();

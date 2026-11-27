@@ -71,14 +71,16 @@ public final class PackResourcesIndex {
     }
 
     public static final class Builder {
-        private final TypeIndexBuilder[] builders;
+        private final TypeIndexBuilder[] builders = new TypeIndexBuilder[PackType.values().length];
 
-        private Builder() {
-            PackType[] packTypes = PackType.values();
-            this.builders = new TypeIndexBuilder[packTypes.length];
-            for (int i = 0; i < packTypes.length; ++i) {
-                this.builders[i] = new TypeIndexBuilder();
+        private Builder() {}
+
+        private TypeIndexBuilder forType(PackType type) {
+            int slot = type.ordinal();
+            if (builders[slot] == null) {
+                builders[slot] = new TypeIndexBuilder();
             }
+            return builders[slot];
         }
 
         public void addNamespace(PackType packType, String namespace) {
@@ -88,7 +90,7 @@ public final class PackResourcesIndex {
         }
 
         void addNamespaceUnchecked(PackType packType, String namespace) {
-            this.builders[packType.ordinal()].namespaces.add(namespace);
+            forType(packType).namespaces.add(namespace);
         }
 
         /**
@@ -106,7 +108,7 @@ public final class PackResourcesIndex {
                 return;
             }
 
-            TypeIndexBuilder typeBuilder = this.builders[packType.ordinal()];
+            TypeIndexBuilder typeBuilder = forType(packType);
             typeBuilder.namespaces.add(namespace);
             if (typeBuilder.resourcesByLocation.putIfAbsent(
                     location,
@@ -129,7 +131,8 @@ public final class PackResourcesIndex {
         public PackResourcesIndex build() {
             TypeIndex[] indexes = new TypeIndex[this.builders.length];
             for (int i = 0; i < indexes.length; ++i) {
-                indexes[i] = this.builders[i].build();
+                TypeIndexBuilder builder = this.builders[i];
+                indexes[i] = builder == null ? TypeIndex.EMPTY : builder.build();
             }
             return new PackResourcesIndex(indexes);
         }
@@ -214,6 +217,7 @@ public final class PackResourcesIndex {
             Map<ResourceLocation, IoSupplier<InputStream>> resourcesByLocation,
             Map<String, NamespaceIndex> resourcesByNamespace
     ) {
+        private static final TypeIndex EMPTY = new TypeIndex(Set.of(), Map.of(), Map.of());
     }
 
     private record NamespaceIndex(

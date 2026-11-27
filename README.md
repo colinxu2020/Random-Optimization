@@ -7,7 +7,7 @@ This mod implements the following features to significantly optimize game perfor
 
 *   **Fixes MC-249136:** This bug causes severe server lag (hangs) when players attempt to locate Buried Treasure (most notably), or when opening/breaking chests containing maps, or using the `/locate` command. This mod employs simple checks to drastically reduce the enumeration required during structure searching, thereby optimizing speed.
 *   **Deterministic Item Drops:** The mod de-randomizes the spawn position of dropped items. This makes designing Redstone contraptions much simpler and easier. Additionally, by reducing the usage of RNG (Random Number Generation), it improves game performance.
-*   **Optimized Resource/Data Pack Loading:** Improves the loading speed of Resource Packs and Data Packs. The mod builds a compact index for compressed packs, directory packs, Forge mod resources, and vanilla resources on first access. This replaces repeated ZIP scans, NIO subtree walks, and filesystem stat calls during namespace discovery, individual lookups, and recursive resource listing.
+*   **Optimized Resource/Data Pack Loading:** Compressed packs use a ZIP entry index. Directory packs, Forge mod resources, and vanilla resources index each requested pack type separately and share namespace paths across entries. Forge mod packs use namespace membership to narrow recursive listings and client resource-stack lookups.
 *   **Boat Fall Damage Fix:** Fixes an issue where boats take fall damage when falling from specific heights. This aligns behavior with the MC-Wiki description and newer Minecraft versions, while also improving performance.
 *   **DFU Optimization:** Defers (lazy loads) the DataFixerUpper (DFU) to improve game startup speed.
 

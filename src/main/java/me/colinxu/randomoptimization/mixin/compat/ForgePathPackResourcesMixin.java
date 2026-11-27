@@ -1,6 +1,7 @@
 package me.colinxu.randomoptimization.mixin.compat;
 
 import me.colinxu.randomoptimization.resource.PackResourcesIndex;
+import me.colinxu.randomoptimization.resource.PackTypeCache;
 import me.colinxu.randomoptimization.resource.PathPackResourcesIndex;
 import net.minecraft.FileUtil;
 import net.minecraft.resources.ResourceLocation;
@@ -17,9 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,39 +35,23 @@ public abstract class ForgePathPackResourcesMixin {
     @Shadow
     protected abstract Path resolve(String... paths);
 
-    @Unique
-    private volatile boolean randomoptimization$indexInitialized;
+    @Shadow
+    private Set<String> getNamespacesFromDisk(PackType type) {
+        throw new AssertionError();
+    }
 
     @Unique
-    private PackResourcesIndex randomoptimization$index;
+    private final PackTypeCache<PackResourcesIndex> randomoptimization$indexes = new PackTypeCache<>();
 
     @Unique
-    private boolean randomoptimization$dataRootMissing;
+    private final PackTypeCache<Set<String>> randomoptimization$namespaces = new PackTypeCache<>();
 
     @Unique
-    private PackResourcesIndex randomoptimization$getIndex() {
-        if (!this.randomoptimization$indexInitialized) {
-            synchronized (this) {
-                if (!this.randomoptimization$indexInitialized) {
-                    Map<PackType, List<Path>> roots =
-                            new EnumMap<>(PackType.class);
-                    for (PackType packType : PackType.values()) {
-                        Path typeRoot = this.resolve(
-                                packType.getDirectory()
-                        );
-                        roots.put(packType, List.of(typeRoot));
-                        if (packType == PackType.SERVER_DATA) {
-                            this.randomoptimization$dataRootMissing =
-                                    !Files.isDirectory(typeRoot);
-                        }
-                    }
-                    this.randomoptimization$index =
-                            PathPackResourcesIndex.buildForge(roots);
-                    this.randomoptimization$indexInitialized = true;
-                }
-            }
-        }
-        return this.randomoptimization$index;
+    private PackResourcesIndex randomoptimization$getIndex(PackType packType) {
+        return randomoptimization$indexes.get(packType, () -> {
+            Path typeRoot = resolve(packType.getDirectory());
+            return PathPackResourcesIndex.buildForge(Map.of(packType, List.of(typeRoot)));
+        });
     }
 
     @Inject(
@@ -82,12 +65,9 @@ public abstract class ForgePathPackResourcesMixin {
             ResourceLocation location,
             CallbackInfoReturnable<IoSupplier<InputStream>> cir
     ) {
-        PackResourcesIndex index = this.randomoptimization$getIndex();
+        PackType effectiveType = location.getPath().startsWith("lang/") ? PackType.CLIENT_RESOURCES : packType;
+        PackResourcesIndex index = this.randomoptimization$getIndex(effectiveType);
         if (index != null) {
-            PackType effectiveType =
-                    location.getPath().startsWith("lang/")
-                            ? PackType.CLIENT_RESOURCES
-                            : packType;
             IoSupplier<InputStream> resource = index.getResource(effectiveType, location);
             if (resource != null) {
                 cir.setReturnValue(resource);
@@ -112,7 +92,7 @@ public abstract class ForgePathPackResourcesMixin {
             return;
         }
 
-        PackResourcesIndex index = this.randomoptimization$getIndex();
+        PackResourcesIndex index = this.randomoptimization$getIndex(packType);
         if (index != null) {
             index.listResources(packType, namespace, path, output);
             ci.cancel();
@@ -129,14 +109,7 @@ public abstract class ForgePathPackResourcesMixin {
             PackType packType,
             CallbackInfoReturnable<Set<String>> cir
     ) {
-        PackResourcesIndex index = this.randomoptimization$getIndex();
-        if (index != null) {
-            PackType effectiveType =
-                    packType == PackType.SERVER_DATA
-                            && this.randomoptimization$dataRootMissing
-                            ? PackType.CLIENT_RESOURCES
-                            : packType;
-            cir.setReturnValue(index.getNamespaces(effectiveType));
-        }
+        cir.setReturnValue(randomoptimization$namespaces.get(packType,
+                () -> Set.copyOf(getNamespacesFromDisk(packType))));
     }
 }

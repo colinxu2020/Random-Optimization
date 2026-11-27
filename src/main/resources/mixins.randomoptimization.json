@@ -7,6 +7,8 @@
   "mixins": [
     "BlockMixin",
     "BoatMixin",
+    "compat.DelegatingPackResourcesMixin",
+    "compat.FallbackResourceManagerMixin",
     "compat.ForgePathPackResourcesMixin",
     "compat.ModernFixFilePackResourcesMixin",
     "FilePackResourcesMixin",

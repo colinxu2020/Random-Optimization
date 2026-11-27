@@ -37,7 +37,9 @@ public class RandomOptimizationMixinConfigPlugin implements IMixinConfigPlugin {
         if(mixinClassName.equals(FILE_PACK_RESOURCES_MIXIN)
                 || mixinClassName.equals(PATH_PACK_RESOURCES_MIXIN)
                 || mixinClassName.equals(VANILLA_PACK_RESOURCES_MIXIN)
-                || mixinClassName.equals(FORGE_PATH_PACK_RESOURCES_MIXIN)) {
+                || mixinClassName.equals(FORGE_PATH_PACK_RESOURCES_MIXIN)
+                || mixinClassName.equals("me.colinxu.randomoptimization.mixin.compat.DelegatingPackResourcesMixin")
+                || mixinClassName.equals("me.colinxu.randomoptimization.mixin.compat.FallbackResourceManagerMixin")) {
             return this.optimizePackLookup;
         }
         if(mixinClassName.equals(MODERN_FIX_FILE_PACK_RESOURCES_MIXIN)) {
