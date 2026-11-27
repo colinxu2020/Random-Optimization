@@ -1,7 +1,6 @@
 package me.colinxu.randomoptimization;
 
 import net.minecraft.server.packs.PackType;
-import net.minecraft.server.packs.resources.IoSupplier;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -12,6 +11,7 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
 
@@ -47,13 +47,10 @@ public final class PathPackResourcesIndex {
     ) {
         PackResourcesIndex.Builder builder = PackResourcesIndex.builder();
         try {
-            for (PackType packType : PackType.values()) {
-                for (Path typeRoot : pathsForType.getOrDefault(
-                        packType,
-                        List.of()
-                )) {
+            for (var entry : pathsForType.entrySet()) {
+                for (Path typeRoot : entry.getValue()) {
                     // Roots are already ordered from highest to lowest priority.
-                    walkTypeRoot(builder, packType, typeRoot);
+                    walkTypeRoot(builder, entry.getKey(), typeRoot);
                 }
             }
             return builder.build();
@@ -69,67 +66,56 @@ public final class PathPackResourcesIndex {
             PackType packType,
             Path typeRoot
     ) throws IOException {
-        try {
-            Files.walkFileTree(typeRoot, new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult preVisitDirectory(
-                        Path directory,
-                        BasicFileAttributes attributes
-                ) {
-                    // Minecraft's LinkFSPath rejects root.relativize(root),
-                    // unlike the default NIO provider. The walk root cannot be
-                    // a namespace anyway, so do not ask the provider to
-                    // relativize it.
-                    if (typeRoot.equals(directory)) {
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    Path relative = typeRoot.relativize(directory);
-                    if (relative.getNameCount() == 1) {
-                        builder.addNamespace(
-                                packType,
-                                relative.getName(0).toString()
-                        );
-                    }
-                    return FileVisitResult.CONTINUE;
+        record Directory(String namespace, Path namespaceRoot, String prefix) {}
+        var directories = new ArrayDeque<Directory>();
+        Files.walkFileTree(typeRoot, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
+                Directory parent = directories.peek();
+                if (parent == null) {
+                    directories.push(new Directory(null, null, ""));
+                } else if (parent.namespace() == null) {
+                    String namespace = dir.getFileName().toString();
+                    builder.addNamespace(packType, namespace);
+                    directories.push(new Directory(namespace, dir, ""));
+                } else {
+                    String prefix = parent.prefix() + dir.getFileName() + "/";
+                    directories.push(new Directory(parent.namespace(), parent.namespaceRoot(), prefix));
                 }
-
-                @Override
-                public FileVisitResult visitFile(
-                        Path file,
-                        BasicFileAttributes attributes
-                ) {
-                    Path relative = typeRoot.relativize(file);
-                    int nameCount = relative.getNameCount();
-                    if (nameCount == 1) {
-                        builder.addNamespace(
-                                packType,
-                                relative.getName(0).toString()
-                        );
-                    } else if (nameCount > 1 && attributes.isRegularFile()) {
-                        builder.addResource(
-                                packType,
-                                relative.getName(0).toString(),
-                                resourcePath(relative),
-                                IoSupplier.create(file)
-                        );
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (NoSuchFileException | NotDirectoryException ignored) {
-            // A missing assets or data root represents an empty pack type.
-        }
-    }
-
-    private static String resourcePath(Path relative) {
-        StringBuilder result = new StringBuilder();
-        for (int i = 1; i < relative.getNameCount(); ++i) {
-            if (result.length() > 0) {
-                result.append('/');
+                return FileVisitResult.CONTINUE;
             }
-            result.append(relative.getName(i));
-        }
-        return result.toString();
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException error) throws IOException {
+                directories.pop();
+                return super.postVisitDirectory(dir, error);
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
+                Directory parent = directories.peek();
+                if (parent == null) {
+                    return FileVisitResult.CONTINUE;
+                }
+                if (parent.namespace() == null) {
+                    builder.addNamespace(packType, file.getFileName().toString());
+                } else if (attributes.isRegularFile()) {
+                    String resourcePath = parent.prefix() + file.getFileName();
+                    Path namespaceRoot = parent.namespaceRoot();
+                    builder.addResource(packType, parent.namespace(), resourcePath,
+                            () -> Files.newInputStream(namespaceRoot.resolve(resourcePath)));
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException error) throws IOException {
+                if (file.equals(typeRoot)
+                        && (error instanceof NoSuchFileException || error instanceof NotDirectoryException)) {
+                    return FileVisitResult.CONTINUE;
+                }
+                return super.visitFileFailed(file, error);
+            }
+        });
     }
 }

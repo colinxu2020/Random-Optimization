@@ -1,6 +1,9 @@
 package me.colinxu.randomoptimization.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import me.colinxu.randomoptimization.PackResourcesIndex;
+import me.colinxu.randomoptimization.PackTypeCache;
 import me.colinxu.randomoptimization.PathPackResourcesIndex;
 import net.minecraft.FileUtil;
 import net.minecraft.resources.ResourceLocation;
@@ -19,6 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Mixin(PathPackResources.class)
@@ -28,23 +33,17 @@ public abstract class PathPackResourcesMixin {
     private Path root;
 
     @Unique
-    private volatile boolean randomoptimization$indexInitialized;
+    private final PackTypeCache<PackResourcesIndex> randomoptimization$indexes = new PackTypeCache<>();
 
     @Unique
-    private PackResourcesIndex randomoptimization$index;
+    private final PackTypeCache<Set<String>> randomoptimization$namespaces = new PackTypeCache<>();
 
     @Unique
-    private PackResourcesIndex randomoptimization$getIndex() {
-        if (!this.randomoptimization$indexInitialized) {
-            synchronized (this) {
-                if (!this.randomoptimization$indexInitialized) {
-                    this.randomoptimization$index =
-                            PathPackResourcesIndex.build(this.root);
-                    this.randomoptimization$indexInitialized = true;
-                }
-            }
-        }
-        return this.randomoptimization$index;
+    private PackResourcesIndex randomoptimization$getIndex(PackType packType) {
+        return randomoptimization$indexes.get(packType, () -> {
+            Path typeRoot = root.resolve(packType.getDirectory());
+            return PathPackResourcesIndex.build(Map.of(packType, List.of(typeRoot)));
+        });
     }
 
     @Inject(method = "getResource", at = @At("HEAD"), cancellable = true)
@@ -53,7 +52,7 @@ public abstract class PathPackResourcesMixin {
             ResourceLocation location,
             CallbackInfoReturnable<IoSupplier<InputStream>> cir
     ) {
-        PackResourcesIndex index = this.randomoptimization$getIndex();
+        PackResourcesIndex index = this.randomoptimization$getIndex(packType);
         if (index != null) {
             IoSupplier<InputStream> resource = index.getResource(packType, location);
             if (resource != null) {
@@ -74,21 +73,15 @@ public abstract class PathPackResourcesMixin {
             return;
         }
 
-        PackResourcesIndex index = this.randomoptimization$getIndex();
+        PackResourcesIndex index = this.randomoptimization$getIndex(packType);
         if (index != null) {
             index.listResources(packType, namespace, path, output);
             ci.cancel();
         }
     }
 
-    @Inject(method = "getNamespaces", at = @At("HEAD"), cancellable = true)
-    private void randomoptimization$getNamespaces(
-            PackType packType,
-            CallbackInfoReturnable<Set<String>> cir
-    ) {
-        PackResourcesIndex index = this.randomoptimization$getIndex();
-        if (index != null) {
-            cir.setReturnValue(index.getNamespaces(packType));
-        }
+    @WrapMethod(method = "getNamespaces")
+    private Set<String> randomoptimization$getNamespaces(PackType type, Operation<Set<String>> original) {
+        return randomoptimization$namespaces.get(type, () -> Set.copyOf(original.call(type)));
     }
 }

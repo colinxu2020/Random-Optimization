@@ -7,7 +7,7 @@ This mod implements the following features to significantly optimize game perfor
 
 *   **Faster structure locating / MC-249136 mitigation:** Rejects impossible candidate chunks before touching chunk storage. This avoids most blocking storage scans when locating low-frequency structures such as buried treasure on both 1.20.1 and 1.21.1.
 *   **Deterministic Item Drops:** The mod de-randomizes the spawn position of dropped items. This makes designing Redstone contraptions much simpler and easier. Additionally, by reducing the usage of RNG (Random Number Generation), it improves game performance.
-*   **Optimized Resource/Data Pack Loading:** Builds a compact index for compressed packs, path-based packs (including NeoForge mod resources), and vanilla resources on first access. This replaces repeated ZIP scans, UnionFileSystem walks, missing-directory exceptions, and file existence checks during reloads.
+*   **Optimized Resource/Data Pack Loading:** Caches namespace listings for path-based packs so Minecraft can select the relevant NeoForge mod packs before scanning their contents. Path-based and vanilla packs index `assets` and `data` independently on first use, sharing namespace roots and reusing directory prefixes during traversal. Compressed packs reuse a shared ZIP index.
 *   **Boat Fall Damage Fix:** Fixes an issue where boats take fall damage when falling from specific heights. This aligns behavior with the MC-Wiki description and newer Minecraft versions, while also improving performance.
 *   **DFU Optimization:** Defers (lazy loads) the DataFixerUpper (DFU) to improve game startup speed.
 
